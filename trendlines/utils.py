@@ -46,8 +46,11 @@ def plot_cons_peaks(data):
     plt.legend(['Close', 'Consecutive Highs'])
     plt.show()
 
-def plot_max_min(order):
-    '''
+
+def plot_all_max_min(data):
+    plt.figure(figsize=(15, 8))
+    plt.plot(data['Close'], zorder=0)
+
     data['local_max'] = data['Close'][
       (data['Close'].shift(1) < data['Close']) &
       (data['Close'].shift(-1) < data['Close'])]
@@ -55,25 +58,68 @@ def plot_max_min(order):
     data['local_min'] = data['Close'][
       (data['Close'].shift(1) > data['Close']) &
       (data['Close'].shift(-1) > data['Close'])]
-    '''
-    max_idx = argrelextrema(data['Close'].values, np.greater, order=order)[0]
-    min_idx = argrelextrema(data['Close'].values, np.less, order=order)[0]
-    plt.figure(figsize=(15, 8))
-    plt.plot(data['Close'], zorder=0)
-    '''
+
     plt.scatter(data.index, data['local_max'], s=100,
       label='Maxima', marker='^', c=colors[1])
     plt.scatter(data.index, data['local_min'], s=100,
       label='Minima', marker='v', c=colors[2])
-    '''
+
+    plt.legend()
+    plt.show()
+
+def get_min_max_idx(data, order):
+    max_idx = argrelextrema(data['Close'].values, np.greater, order=order)[0]
+    min_idx = argrelextrema(data['Close'].values, np.less, order=order)[0]
+    return [min_idx, max_idx]
+
+def get_support_resistance(data, order):
+    min_idx, max_idx = get_min_max_idx(data, order) 
+    return [df.iloc[min_idx].Close, df.iloc[max_idx].Close]
+     
+def plot_support_resistance(data, support, resistance, n=5):
+
+    plt.figure(figsize=(15, 8))
+    plt.plot(data['Close'], zorder=0)
+    plt.scatter(data.iloc[support].index, data.iloc[support]['Close'],
+        label='support', s=100, color=colors[1], marker='^')
+    plt.scatter(data.iloc[resistance].index, data.iloc[resistance]['Close'],
+        label='resistance', s=100, color=colors[2], marker='v')
+
+    dates = data.index
+
+    s1 = support[-1] 
+    s2 = dates[s1] + timedelta(days=30) 
+    plt.plot([dates[s1],s2], [data.iloc[s1]['Close'],data.iloc[s1]['Close']],
+        label='support', color='black')
+
+    r1 = resistance[-1] 
+    r2 = dates[r1] + timedelta(days=30) 
+    plt.plot([dates[r1],r2], [data.iloc[resistance[-1]]['Close'],data.iloc[resistance[-1]]['Close']],
+        label='resistance', color='black')
+
+    plt.xlabel('Date')
+    plt.ylabel('Price ($)')
+
+def plot_max_min(data, order):
+
+    min_idx, max_idx = get_min_max_idx(data, order) 
+
+    plt.figure(figsize=(15, 8))
+    plt.plot(data['Close'], zorder=0)
     plt.scatter(data.iloc[max_idx].index, data.iloc[max_idx]['Close'],
         label='Maxima', s=100, color=colors[1], marker='^')
     plt.scatter(data.iloc[min_idx].index, data.iloc[min_idx]['Close'],
         label='Minima', s=100, color=colors[2], marker='v')
 
-    #plt.xlabel('Date')
-    #plt.ylabel('Price ($)')
-    #plt.title(f'Local Maxima and Minima for {ticker}')
+    if args.movement:
+        plt.plot(data.iloc[max_idx].index, data.iloc[max_idx]['Close'],
+            label='Maxima', color=colors[1])
+        plt.plot(data.iloc[min_idx].index, data.iloc[min_idx]['Close'],
+            label='Minima', color=colors[2])
+
+    plt.xlabel('Date')
+    plt.ylabel('Price ($)')
+    plt.title(f'Local Maxima and Minima for {ticker}')
     plt.legend()
     plt.show()
 
@@ -181,38 +227,6 @@ def getLowerLows(data: np.array, order=5, K=2):
 
     return extrema
 
-    
-def detect_trendline(df, window=2):
-    # Define the rolling window
-    roll_window = window
-    # Create new columns for the linear regression slope and y-intercept
-    df['slope'] = np.nan
-    df['intercept'] = np.nan
-
-    for i in range(window, len(df)):
-        x = np.array(range(i-window, i))
-        y = df['Close'][i-window:i]
-        A = np.vstack([x, np.ones(len(x))]).T
-        m, c = np.linalg.lstsq(A, y, rcond=None)[0]
-        df.at[df.index[i], 'slope'] = m
-        df.at[df.index[i], 'intercept'] = c
-
-    # Create a boolean mask for trendline support
-    mask_support = df['slope'] > 0
-
-    # Create a boolean mask for trendline resistance
-    mask_resistance = df['slope'] < 0
-
-    # Create new columns for trendline support and resistance
-    df['support'] = np.nan
-    df['resistance'] = np.nan
-
-    # Populate the new columns using the boolean masks
-    df.loc[mask_support, 'support'] = df['Close'] * df['slope'] + df['intercept']
-    df.loc[mask_resistance, 'resistance'] = df['Close'] * df['slope'] + df['intercept']
-
-    return df
-
 def calculate_slope_and_intercept(x1, y1, x2, y2):
     """
     Calculates the slope (m) and y-intercept (b) for a line.
@@ -319,6 +333,18 @@ def search_falling_wedge(dates, close, LH, LL):
 
     return lines 
 
+def is_sr_flip_zone(close, support, resistance):
+    ret = False
+    try:
+        print(close[-1], resistance.iloc[-1])
+        print(close[-1]/resistance.iloc[-1])
+        #if close[-1] >= resistance.iloc[-1]:
+        if close[-1]/resistance.iloc[-1] >= 0.95:
+            ret = True
+    except:
+        print('out of bound')
+    finally:
+        return ret 
 
 parser = ArgumentParser(
                     prog='ProgramName',
@@ -334,8 +360,11 @@ parser.add_argument('-mag7', '--mag7', action="store_true")
 parser.add_argument('-test', '--test', action="store_true")
 parser.add_argument('-tick', '--ticker', type=str)
 parser.add_argument('-sp500', '--sp500', action="store_true")
-parser.add_argument('-plta', '--plot_all', action="store_true", default=False)
-parser.add_argument('-dg', '--debug', action="store_true", default=False)
+parser.add_argument('-plta', '--plot_all', action="store_true")
+parser.add_argument('-dg', '--debug', action="store_true")
+parser.add_argument('-ap', '--all_peaks', action="store_true")
+parser.add_argument('-sr', '--support_resistance', action="store_true")
+parser.add_argument('-f', '--file', type=str)
 args = parser.parse_args()
 
 MAG_7 = ['AAPL', 'AMZN', 'GOOGL', 'NVDA', 'MSFT', 'META', 'TSLA']
@@ -358,15 +387,18 @@ if args.ticker:
 if args.sp500:
     sp500 = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
     tickers = sp500['Symbol'].tolist()
-    for ticker in tickers[:100]:
+    for ticker in tickers:
         data[ticker] = yf.download(ticker, period="3mo", interval='1d', multi_level_index=False)
+
+if args.file:
+    with open(args.file, 'r') as f:
+        tickers = f.readlines()
+        for ticker in tickers:
+            ticker = ticker.strip()
+            data[ticker] = yf.download(ticker, period="3mo", interval='1d', multi_level_index=False)
 
 order = args.order 
 K = 2
-
-if args.peaks:
-    plot_max_min(order)
-    exit()
 
 legend_elements = [
     Line2D([0], [0], color=colors[0], label='Close'),
@@ -406,42 +438,78 @@ if args.confirm:
     ]
     legend_elements.extend(confirmLine2D)
 
+fw_tickers = []
 for ticker, df in data.items():
     close = df['Close'].values
     dates = df.index
+
+    if args.peaks:
+        plot_max_min(df, order)
+        continue
+
+    if args.all_peaks:
+        plot_all_max_min(df)
+        continue
+
+    support, resistance = get_support_resistance(df, order)
+    if args.support_resistance:
+        support_idx, resistance_idx = get_min_max_idx(df, order)
+        plot_support_resistance(df, support_idx, resistance_idx)
+
+    if args.debug:
+        print(ticker)
 
     hh = getHigherHighs(close, order, K)
     hl = getHigherLows(close, order, K)
     ll = getLowerLows(close, order, K)
     lh = getLowerHighs(close, order, K)
 
+    if args.movement and not args.falling_wedge:
+        plt.figure(figsize=(15, 8))
+        plt.plot(df['Close'])
+        plt.xlabel('Date')
+        plt.ylabel('Price ($)')
+        plt.title(f'{ticker} Closing Price')
 
-    if args.movement:
         _ = [plt.plot(dates[i], close[i], c=colors[1]) for i in hh]
         _ = [plt.plot(dates[i], close[i], c=colors[2]) for i in hl]
         _ = [plt.plot(dates[i], close[i], c=colors[3]) for i in ll]
         _ = [plt.plot(dates[i], close[i], c=colors[4]) for i in lh]
 
 
-    if args.debug:
-        print(ticker)
-
     if args.falling_wedge:
         lines = search_falling_wedge(dates, close, lh, ll)
-        if lines:
+        sr_flip = is_sr_flip_zone(close, support, resistance)
+        #sr_flip = True
+        if lines and sr_flip:
+            print(f'ticker: {ticker}')
+            fw_tickers.append(ticker+'\n')
             plt.figure(figsize=(15, 8))
             plt.plot(df['Close'])
             plt.xlabel('Date')
             plt.ylabel('Price ($)')
             plt.title(f'{ticker} Closing Price')
+
             for line in lines:
                 xh_line, yh_line = line[0]
                 xl_line, yl_line = line[1]
                 plt.plot(xh_line, yh_line, c='black')
                 plt.plot(xl_line, yl_line, c='black')
+
+            if args.movement:
+                _ = [plt.plot(dates[i], close[i], c=colors[1]) for i in hh]
+                _ = [plt.plot(dates[i], close[i], c=colors[2]) for i in hl]
+                _ = [plt.plot(dates[i], close[i], c=colors[3]) for i in ll]
+                _ = [plt.plot(dates[i], close[i], c=colors[4]) for i in lh]
+
             plt.legend(handles=legend_elements)
             plt.show()
-            
+    else:
+        sr_flip = is_sr_flip_zone(close, support, resistance)
+        sr_flip = True
+        if sr_flip:
+            plt.legend(handles=legend_elements)
+            plt.show()
 
     if args.confirm:
         _ = [plt.scatter(dates[i[-1]] + timedelta(order), close[i[-1]], 
@@ -453,7 +521,9 @@ for ticker, df in data.items():
         _ = [plt.scatter(dates[i[-1]] + timedelta(order), close[i[-1]],
             c=colors[4], marker='v', s=100) for i in lh]
 
-    if args.plot_all:
-        pass
-        #plt.legend(handles=legend_elements)
-        #plt.show()
+    #if args.plot_all:
+    #    plt.legend(handles=legend_elements)
+    #    plt.show()
+
+with open('falling_wedge_tickers', 'w') as f:
+    f.writelines(fw_tickers)
