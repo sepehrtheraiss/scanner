@@ -13,6 +13,10 @@ parser = ArgumentParser(
                     epilog='let$ make $ome $$$')
 
 # EXTRACT
+parser.add_argument('-s', '--start', help="start date(YYYY-MM-DD)", type=str )
+parser.add_argument('-e', '--end', help="end date(YYYY-MM-DD)", type=str )
+parser.add_argument('-p', '--period', help="default 3mo", type=str, default='3mo')
+parser.add_argument('-i', '--interval', help="default 1d", type=str, default='1d')
 parser.add_argument('-mag7', '--mag7', action="store_true")
 parser.add_argument('-test', '--test', action="store_true")
 parser.add_argument('-tick', '--ticker', type=str)
@@ -26,8 +30,6 @@ parser.add_argument('-saveDataHistory', '--saveDataHistory', action="store_true"
 parser.add_argument('-saveTickers', '--saveTickers', action="store_true")
 # TRANSFORM
 parser.add_argument('-o', '--order', help="default 5", type=int, default=5)
-parser.add_argument('-p', '--period', help="default 3mo", type=str, default='3mo')
-parser.add_argument('-i', '--interval', help="default 1d", type=str, default='1d')
 parser.add_argument('-peaks', '--peaks', action="store_true")
 parser.add_argument('-tr', '--trendline', action="store_true")
 parser.add_argument('-c', '--confirm', action="store_true")
@@ -38,7 +40,7 @@ parser.add_argument('-dg', '--debug', action="store_true")
 args = parser.parse_args()
 
 # FECTH
-fetch = Fetch(args.period, args.interval)
+fetch = Fetch(args.period, args.interval, args.start, args.end)
 data = {}
 
 if args.test:
@@ -59,7 +61,10 @@ if args.file:
 # TRANSFORM
 # PLOT
 order = args.order 
-tickers = {} 
+tickers = {
+            'period': args.period,
+            'interval': args.interval,
+        } 
 pattern = 'Falling Wedge' 
 tickers['Falling Wedge'] = []
 for ticker, df in data.items():
