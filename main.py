@@ -69,34 +69,39 @@ pattern = 'Falling Wedge'
 tickers['Falling Wedge'] = []
 for ticker, df in data.items():
 
-    plot = Plot(ticker, df, args.period, args.interval, ochl='Close', x=15, y=8)
-
-    if args.peaks:
-        min_idx, max_idx = get_min_max_idx(df, order) 
-        plot.plot_min_max(min_idx, max_idx)
-
+    dates = df.index 
     close = df['Close'].values
     hh = get_higher_highs(close, order)
     hl = get_higher_lows(close, order)
     ll = get_lower_lows(close, order)
     lh = get_lower_highs(close, order)
-    if args.trendline:
-        plot.plot_trendlines(hh, hl, ll, lh)
 
     lines = []
     if args.falling_wedge:
-        dates = df.index 
         lines = get_falling_wedge_lines(dates, close, lh, ll)
+
     if args.onlyBreakout:
-        plot.plot_breakout(lines, 'Falling Wedge')
-        #print('plot breakout')
-        #print(lines)
-        if lines and args.savePlt:
-            plot.savePlot()
-        if lines and args.showPlt:
-            plot.showPlot()
-        if lines and args.saveTickers:
-            tickers['Falling Wedge'].append(ticker)
+        if lines:
+            plot = Plot(ticker, df, args.period, args.interval, ochl='Close', x=15, y=8)
+            plot.plot_breakout(lines, 'Falling Wedge')
+    else:
+        plot = Plot(ticker, df, args.period, args.interval, ochl='Close', x=15, y=8)
+
+    if args.peaks:
+        min_idx, max_idx = get_min_max_idx(df, order) 
+        plot.plot_min_max(min_idx, max_idx)
+
+    if args.trendline:
+        plot.plot_trendlines(hh, hl, ll, lh)
+
+    if args.onlyBreakout:
+        if lines:
+            if args.savePlt:
+                plot.savePlot()
+            if args.showPlt:
+                plot.showPlot()
+            if args.saveTickers:
+                tickers['Falling Wedge'].append(ticker)
     else:
         plot.plot_breakout(lines, 'Falling Wedge')
         if args.savePlt:

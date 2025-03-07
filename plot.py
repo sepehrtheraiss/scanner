@@ -16,7 +16,7 @@ class Plot:
         #self.fig.set_facecolor('xkcd:salmon')
         plt.style.use('dark_background')
         self.ochl = ochl 
-        plt.title(f'{ticker} {ochl} Price')
+        plt.title(f'{ticker}-{period}-{interval} {ochl} Price')
         self.colors = {
             'support' : 'yellow',
             'resistance': 'red',
@@ -29,7 +29,6 @@ class Plot:
             'peak-down' :'purple',
              ochl: 'white',
         }
-        plt.plot(self.df[self.ochl], color=self.colors[ochl], zorder=0)
         plt.xlabel('Date')
         plt.ylabel('Price ($)')
         self.legend_elements = [
@@ -65,6 +64,7 @@ class Plot:
         self.fig.savefig(f'plots/{self.ticker}-{self.period}-{self.interval}')
 
     def showPlot(self):
+        plt.plot(self.df[self.ochl], color=self.colors[self.ochl], zorder=0)
         plt.legend(handles=self.legend_elements)
         plt.show()
 
@@ -92,8 +92,6 @@ class Plot:
         _ = [plt.plot(dates[i], self.df[self.ochl].iloc[i], c=self.colors['LH']) for i in lh]
     
     def plot_breakout(self, lines, pattern):
-        if not len(lines):
-            return
         self.legend_elements.append(Line2D([0], [0], color=self.colors['breakout'], label=pattern))
         for line in lines:
             xh_line, yh_line = line[0]
