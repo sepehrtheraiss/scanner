@@ -40,9 +40,10 @@ class Fetch:
         return data
 
     def file(self, fname):
+        data = {}
         with open(fname, 'r') as f:
             tickers = f.readlines()
             for ticker in tickers:
                 ticker = ticker.strip()
-                data[ticker] = yf.download(tname, period=self.period, start=self.start, end=self.end, interval=self.interval, multi_level_index=False)
+                data[ticker] = yf.download(fname, period=self.period, start=self.start, end=self.end, interval=self.interval, multi_level_index=False)
         return data

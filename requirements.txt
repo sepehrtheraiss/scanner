@@ -1,0 +1,6 @@
+matplotlib==3.10.0
+matplotlib-inline==0.1.7
+pandas==2.2.3
+requests==2.32.3
+requests-oauthlib==2.0.0
+yfinance==0.2.58

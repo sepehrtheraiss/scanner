@@ -7,7 +7,7 @@ from matplotlib.lines import Line2D
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 class Plot:
-    def __init__(self, ticker, df, period, interval, ochl='Close', x=15, y=8):
+    def __init__(self, ticker, df, period, interval, ochl='Close', order=6, x=15, y=8):
         self.ticker = ticker
         self.df = df
         self.period = period
@@ -16,7 +16,7 @@ class Plot:
         #self.fig.set_facecolor('xkcd:salmon')
         plt.style.use('dark_background')
         self.ochl = ochl 
-        plt.title(f'{ticker}-{period}-{interval} {ochl} Price')
+        plt.title(f'{ticker}-{period}-{interval} {ochl} Price order {order}')
         self.colors = {
             'support' : 'yellow',
             'resistance': 'red',

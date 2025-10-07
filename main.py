@@ -1,3 +1,4 @@
+#!/Users/sraissian/Dev/python/env/bin/python3
 # main.py
 # controls the flow of program (ETL)
 # fetch data -> transform -> plot
@@ -6,6 +7,8 @@ from fetch import *
 from trends import *
 from plot import *
 import json
+from stock_indicators import indicators
+from stock_indicators.indicators.common.quote import Quote
 
 parser = ArgumentParser(
                     prog='scanner',
@@ -44,7 +47,29 @@ fetch = Fetch(args.period, args.interval, args.start, args.end)
 data = {}
 
 if args.test:
-    data = fetch.test_data()
+    data = fetch.test_data()['AAPL']
+    idx = data.index.tolist()
+    v = data.values.tolist()
+    l = []
+    for i in range(len(idx)):
+        l.append(Quote(date=idx[i], close=v[i][0], high=v[i][1], low=v[i][2], open=v[i][3], volume=v[i][4]))
+    # calculate 20-period SMA
+    results = indicators.get_sma(l, 20)
+
+    # use results as needed for your use case (example only)
+    #for r in results:
+    #    print(f"SMA on {r.date.date()} was ${r.sma or 0:.4f}")
+
+    breakpoint
+    plot = Plot('AAPL', data, args.period, args.interval, ochl='Close', order=8, x=15, y=8)
+    plot.showPlot()
+    plot = Plot('AAPL', results, args.period, args.interval, ochl='sma', order=8, x=15, y=8)
+    plot.showPlot()
+
+    plt.plot(results, color=self.colors[self.ochl], zorder=0)
+    plt.legend(handles=self.legend_elements)
+    plt.show()
+    exit()
 
 if args.mag7:
     data = fetch.mag_7()
@@ -82,10 +107,12 @@ for ticker, df in data.items():
 
     if args.onlyBreakout:
         if lines:
-            plot = Plot(ticker, df, args.period, args.interval, ochl='Close', x=15, y=8)
+            plot = Plot(ticker, df, args.period, args.interval, ochl='Close', order=order, x=15, y=8)
             plot.plot_breakout(lines, 'Falling Wedge')
+        else:
+            continue
     else:
-        plot = Plot(ticker, df, args.period, args.interval, ochl='Close', x=15, y=8)
+        plot = Plot(ticker, df, args.period, args.interval, ochl='Close', order=order, x=15, y=8)
 
     if args.peaks:
         min_idx, max_idx = get_min_max_idx(df, order) 

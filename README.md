@@ -26,7 +26,6 @@ scanner/
 ├── trends.py    # Compute trends and indicators
 ├── plot.py      # Plot charts with matplotlib
 ├── main.py      # CLI entry point
-└── examples/    # Example outputs (CSV, charts)
 ```
 
 ---
@@ -78,7 +77,7 @@ git clone https://github.com/sepehrtheraiss/scanner.git
 cd scanner
 python -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt   # (optional once added)
+pip install -r requirements.txt
 ```
 
 ---
